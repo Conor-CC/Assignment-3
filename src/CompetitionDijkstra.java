@@ -1,4 +1,5 @@
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -30,77 +31,95 @@ public class CompetitionDijkstra {
     }
 
 
-    final Vertex[] vertices;
+    Vertex[] vertices;
     boolean[] markingArray;
     double prevWeight = 0;
     Edge prevEdge;
     double currentTotalWeight;
     double[] bigguns;
     PriorityQueue<Double> biggestWeights;
+    int sA, sB, sC;
+    boolean run = true;
 
-    public CompetitionDijkstra(String filename, int sA, int sB, int sC) throws IOException {
-        FileInputStream fs = new FileInputStream(filename);
-        Scanner scanner = new Scanner(fs);
-        Scanner digScanner;
-        String data = "";
-        while (scanner.hasNextLine()) {
-            data += scanner.nextLine() + "\n";
-        }
-        String[] dataArray = data.split("\n");
-        int interSectionCount = Integer.parseInt(dataArray[0]);
-        int streetCount = Integer.parseInt(dataArray[1]);
-        vertices = new Vertex[interSectionCount];
-        markingArray = new boolean[interSectionCount];
-        bigguns = new double[interSectionCount];
-        int from, to; double weight;
-        for (int i = 0; i < streetCount; i++) {
-            String currentEntry = dataArray[i + 2];
-            digScanner = new Scanner(currentEntry);
-            //String[] currentArray = currentEntry.split("[ ]+");
-            from = digScanner.nextInt();/*Integer.parseInt(currentArray[0]);*/
-            to = digScanner.nextInt();/*Integer.parseInt(currentArray[1]);*/
-            weight = digScanner.nextDouble();/*Double.parseDouble(currentArray[2])*/;
-            if (vertices[from] == null) {
-                vertices[from] = new Vertex(from);
+    public CompetitionDijkstra(String filename, int sA, int sB, int sC) {
+        FileInputStream fs = null;
+        if (filename != null && sA > 0 && sB > 0 && sC > 0 && sA >= 50 && sA <= 100
+                && sB >= 50 && sB <= 100 && sC >= 50 && sC <= 100) {
+            try {
+                fs = new FileInputStream(filename);
+            } catch (FileNotFoundException e) {
+                run = false;
+                e.printStackTrace();
             }
-            vertices[from].edges.add(new Edge(from, to, weight));
+            Scanner scanner = null;
+            if (fs != null) {
+                scanner = new Scanner(fs);
+
+                Scanner digScanner;
+                String data = "";
+                this.sA = sA;
+                this.sB = sB;
+                this.sC = sC;
+                while (scanner.hasNextLine()) {
+                    data += scanner.nextLine() + "\n";
+                }
+                String[] dataArray = data.split("\n");
+                int interSectionCount = Integer.parseInt(dataArray[0]);
+                int streetCount = Integer.parseInt(dataArray[1]);
+                vertices = new Vertex[interSectionCount];
+                markingArray = new boolean[interSectionCount];
+                bigguns = new double[interSectionCount];
+                int from, to;
+                double weight;
+                for (int i = 0; i < streetCount; i++) {
+                    String currentEntry = dataArray[i + 2];
+                    digScanner = new Scanner(currentEntry);
+                    from = digScanner.nextInt();/*Integer.parseInt(currentArray[0]);*/
+                    to = digScanner.nextInt();/*Integer.parseInt(currentArray[1]);*/
+                    weight = digScanner.nextDouble();/*Double.parseDouble(currentArray[2])*/
+                    ;
+                    if (vertices[from] == null) {
+                        vertices[from] = new Vertex(from);
+                    }
+                    vertices[from].edges.add(new Edge(from, to, weight));
+                }
+//                for (int i = 0; i < vertices.length; i++) {
+//                    if (vertices[i] == null) {
+//                        vertices[i] = new Vertex(i);
+//                    }
+//                }
+            }
+        } else {
+            run = false;
         }
-        System.out.println("Finished parsing...");
-        timeRequiredForCompetition(sA, sB, sC);
-        System.out.println();
     }
 
 
 
-    public int timeRequiredForCompetition(int sA, int sB, int sC) {
-        LinkedList<Edge> routes = null;
-        biggestWeights = new PriorityQueue<Double>(20, Collections.reverseOrder());
-        for (int i = 0; i < vertices.length; i++) {
-            for (int j = 0; j < markingArray.length; j++) {
-                markingArray[j] = false;
+    public int timeRequiredforCompetition() {
+        if (vertices != null && run) {
+            LinkedList<Edge> routes = null;
+            biggestWeights = new PriorityQueue<Double>(20, Collections.reverseOrder());
+            for (int i = 0; i < vertices.length; i++) {
+                for (int j = 0; j < markingArray.length; j++) {
+                    markingArray[j] = false;
+                }
+                if (vertices[i] != null)
+                    dijkstraAlgorithm(vertices[i]);
             }
-            routes = dijkstraAlgorithm(vertices[i]);
+
+
+            double first = biggestWeights.poll();
+            double firstDiv = sA;
+            double firstDist = first * 1000;
+
+            System.out.println("\n" + firstDist);
+
+            double resInMins = firstDist / firstDiv;
+
+
+            return (int) resInMins;
         }
-
-
-
-        double first = biggestWeights.poll();
-        double second = biggestWeights.poll();
-        double third = biggestWeights.poll();
-
-        double firstDiv = sA;
-        double secondDiv = sB;
-        doub    le thirdDiv = sC;
-
-        double firstDist = first * 100;
-        double secondDist = second * 100;
-        double thirdDist = third * 100;
-        System.out.println("\n" + firstDist);
-
-        double resInSecs = firstDist/firstDiv;
-
-        System.out.println(resInSecs);
-
         return -1;
     }
 
@@ -136,7 +155,8 @@ public class CompetitionDijkstra {
             }
         }
         toAmend.remove(shortest);
-        addEdges(toAmend, vertices[shortest.to].edges, toAddTo);
+        if (vertices[shortest.to] != null)
+            addEdges(toAmend, vertices[shortest.to].edges, toAddTo);
         toAddTo.add(shortest);
     }
 
